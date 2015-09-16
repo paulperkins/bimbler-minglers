@@ -210,7 +210,7 @@ class Bimbler_Minglers {
 
 				$content .= $i++ . ': ' . $event->id . ' -> ' . $event->name . ' on ' . $event->event_date;
 				
-				$content .= '<br>';
+				// $content .= '<br>';
 				
 				// See if this event already exists.
 				$get_posts = tribe_get_events( array(
@@ -249,7 +249,7 @@ class Bimbler_Minglers {
 						$this_event = $get_posts[0];
 						
 						// $content .= ' Found: ' . $this_event->post_title . ' on ' . tribe_get_start_date($this_event->ID, false, 'Y-m-d H:i:s') . '.';
-						$content .= ' Found: post ID <a href="' . get_permalink ($this_event->ID) . '" target="_external">' . $this_event->ID . '</a>.';
+						$content .= ' Found: post ID <a href="' . get_permalink ($this_event->ID) . '" target="_external">' . $this_event->ID . '</a>.<br>';
 							
 						// We're updating existing events - backfill data.				
 						if ($update_meta_if_found) {
@@ -261,23 +261,25 @@ class Bimbler_Minglers {
 									// Update with Meetup ID if it's not already set
 									update_post_meta ($this_event->ID, 'bimbler_meetup_id', $event->id);
 									
-									$content .= ' Updated Meetup ID. ';
+									$content .= '<font color="orange">&nbsp;-- Updated Meetup ID.</font> ';
 									
 								} else {
 
-									$content .= ' Test mode - Meetup ID not updated. ';
+									$content .= '<font color="orange">&nbsp;-- Test mode - Meetup ID not updated. </font>';
 								}
 
 								$updated++;
 								
 							} else {
 								
-								$content .= ' Existing event with Meetup ID set - no action to take.';	
+								$content .= '<font color="green">&nbsp;-- Existing event with Meetup ID set - no action to take.</font>';	
 							}
+						} else {
+							$content .= '<font color="green"><br>&nbsp;-- Not running in "Update Meetup ID if found" mode - no action taken.</font>'; 
 						}
 						
 					} else { // No mingler event found at that time on that day.
-						$content .= ' Not found.'; 
+						$content .= '<font color="green"><br>&nbsp;-- Not found. No action taken.</font>'; 
 					}
 					
 					$content .= '<br>';
