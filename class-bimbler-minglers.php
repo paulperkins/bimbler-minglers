@@ -77,7 +77,7 @@ class Bimbler_Minglers {
 	} // End constructor.
 	
 
-	function fetch_meetup_events ($api_key) {
+	function fetch_meetup_events ($group_id, $api_key) {
 		       
 		$import = new stdClass ();   
 			    
@@ -86,7 +86,7 @@ class Bimbler_Minglers {
 		$offset = 0;
 		$cont = true;
 		
-		$get = "http://api.meetup.com/2/events?group_id=6763812&status=upcoming&format=json";
+		$get = "http://api.meetup.com/2/events?group_id=" . $group_id . "&status=upcoming&format=json";
 		$get .= "&page=100&offset=";		
 		
 		$key = '&key=' . $api_key;
@@ -137,6 +137,29 @@ class Bimbler_Minglers {
 		return $text;
 	}
 
+	function get_current_user_id () {
+
+		// Running interactively.
+		if (is_user_logged_in()) {
+			global $current_user;
+			get_currentuserinfo();
+			
+			if (isset ($current_user)) {
+				
+				return $current_user->ID;
+				
+			}
+		}
+		
+		// Running from cron - return the primary admin user.
+		$admin_users = Bimbler_RSVP::get_instance()->get_admin_users();
+		
+		sort ($admin_users);
+		
+		return $admin_users[0];
+	}
+
+
 	function import_meetup_events($atts) {
 		
 		$fetched = 0;
@@ -161,7 +184,8 @@ class Bimbler_Minglers {
 		
 		$a = shortcode_atts (array (
                         'api_key' 	=> 7,
-                        'test' 		=> 'N',
+						'group_id'	=> 0,
+                        'test' 		=> 'Y',
 		), $atts);
 		
 		if (!isset ($a)) {
@@ -178,6 +202,7 @@ class Bimbler_Minglers {
 		
 		
 		$content .= '<h5>Input Parameters</h5>';
+		$content .= 'Group ID: ' .  $a['group_id'] . '<br>';
 		$content .= 'API Key: ' .  $a['api_key'] . '<br>';
 		$content .= 'Test mode: ' . $a['test'] . '<br><br>';
 
@@ -189,8 +214,12 @@ class Bimbler_Minglers {
 			$test_mode = true;
 		}
 		
-		$import = $this->fetch_meetup_events ($a['api_key']);
+		$import = $this->fetch_meetup_events ($a['group_id'], $a['api_key']);
 		
+		// Who are are running as?
+		$this_user_id = $this->get_current_user_id();		
+		//$content .= 'Running as user ID: ' . $this_user_id . '<br><br>';
+
 		$content .= '<h4>Output:</h4>';
 		$content .= $import->output;
 		$content .= '<br>';
@@ -216,19 +245,17 @@ class Bimbler_Minglers {
 				$get_posts = tribe_get_events( array(
 					'eventDisplay' 	=> 'custom',
 					'posts_per_page'=>	1,
+					'post_status' 	=> array ('publish', 'draft'),
 					'meta_query' 	=> array(
-											array(
-													'key' 		=> '_EventStartDate',
+											array(	'key' 		=> '_EventStartDate',
 													'value' 	=> $event->event_date,
 													'compare' 	=> '=',
-													'type' 		=> 'datetime'
-											), 
-										),
+													'type' 		=> 'datetime'), 
+											),
 					'tax_query' 	=> array(
-											array(
-												'taxonomy' => TribeEvents::TAXONOMY,
-															'field' => 'slug',
-															'terms' => 'mingle'),
+											array(	'taxonomy' => TribeEvents::TAXONOMY,
+													'field' => 'slug',
+													'terms' => 'mingle'),
 											)
 										)
 									);
@@ -238,8 +265,8 @@ class Bimbler_Minglers {
 					//error_log (json_encode ($get_posts));
 
 					// What does this app do today?
-					$create_if_not_found = false;
-					$update_meta_if_found = true;
+					$create_if_not_found = true;
+					$update_meta_if_found = false;
 					
 					// Got the same event (or at least, *a* Mingle starting at the same time).
 					if (!empty ($get_posts)) {
@@ -247,6 +274,8 @@ class Bimbler_Minglers {
 						$found++;
 						 
 						$this_event = $get_posts[0];
+						
+						//$content .= '<pre>' . json_encode ($this_event, true) . '</pre>';
 						
 						// $content .= ' Found: ' . $this_event->post_title . ' on ' . tribe_get_start_date($this_event->ID, false, 'Y-m-d H:i:s') . '.';
 						$content .= ' Found: post ID <a href="' . get_permalink ($this_event->ID) . '" target="_external">' . $this_event->ID . '</a>.<br>';
@@ -275,11 +304,79 @@ class Bimbler_Minglers {
 								$content .= '<font color="green">&nbsp;-- Existing event with Meetup ID set - no action to take.</font>';	
 							}
 						} else {
-							$content .= '<font color="green"><br>&nbsp;-- Not running in "Update Meetup ID if found" mode - no action taken.</font>'; 
+							$content .= '<font color="green">&nbsp;-- Not running in "Update Meetup ID if found" mode - no action taken.</font>'; 
 						}
 						
 					} else { // No mingler event found at that time on that day.
-						$content .= '<font color="green"><br>&nbsp;-- Not found. No action taken.</font>'; 
+					
+						if ($create_if_not_found) {
+
+							//$content .= '<pre>' . print_r ($event, true) . '</pre>'; 	
+
+							//$new_event = new stdClass();
+							$new_event = array ();
+							
+							$new_event['EventStartDate'] = date( 'Y-m-d', strtotime ($event->event_date) );
+							$new_event['EventStartHour'] = date( 'h', strtotime ($event->event_date) );
+							$new_event['EventStartMinute'] = date( 'i', strtotime ($event->event_date) );
+
+							// Add an abitrary 3 hours to the start time to get the end time.
+							$new_event['EventEndDate'] = date( 'Y-m-d', strtotime($event->event_date . ' + 3 hours') );
+							$new_event['EventEndHour'] = date( 'h', strtotime($event->event_date . ' + 3 hours') );
+							$new_event['EventEndMinute'] = date( 'i', strtotime($event->event_date . ' + 3 hours') );
+
+							$content .= '<br><font color="red">&nbsp;-- Creating new event.</font>';
+							
+							//$content .= '<pre>' . print_r ($new_event, true) . '</pre>'; 	
+							
+						    $new_event['post_status'] = 'draft';
+							$new_event['author'] = $this_user_id;
+							$new_event['post_title'] = $event->name;
+							$new_event['post_content'] = $event->description; 
+
+							// XXXXX REMOVE SECOND TERM WHEN FINISHED TESTING XXXX
+							if (!$test_mode && ($created < 1)) {
+							
+							    $new_event_id = TribeEventsAPI::createEvent ($new_event);
+    
+								// Copy the taxonomies.
+								$taxonomies = get_object_taxonomies ('tribe_events');
+								
+								foreach( $taxonomies AS $tax ) {
+									$terms = wp_get_object_terms( $event_id, $tax );
+									$term = array();
+									foreach( $terms AS $t ) {
+										$term[] = $t->slug;
+									} 
+								
+									wp_set_object_terms( $new_event_id, $term, $tax );
+								}
+
+								// Update with Meetup ID.
+								update_post_meta ($new_event_id, 'bimbler_meetup_id', $event->id);
+
+								$tribe_ecp = TribeEvents::instance();
+								
+								// Set this to a Mingle.
+								$term_info = get_term_by( 'slug', 'mingle', $tribe_ecp->get_event_taxonomy() );
+								
+								wp_set_object_terms ($new_event_id, $term_info->term_id, $term_info->taxonomy);
+
+								$content .= ' New event ID: <a href="' . get_permalink ($new_event_id)  . '" target="_external">' . $new_event_id . '</a>';
+
+							} else {
+
+									$content .= '<font color="orange">&nbsp;-- Test mode - Event not created. </font>';
+								
+							}
+							
+							$created++;
+
+							
+						} else { // End create_if_not_found.
+							
+							$content .= '<font color="green"><br>&nbsp;-- Not found. No action taken.</font>';
+						} 
 					}
 					
 					$content .= '<br>';
