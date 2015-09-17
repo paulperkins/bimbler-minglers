@@ -348,10 +348,10 @@ class Bimbler_Minglers {
 								$new_event['EventEndHour'] = date( 'h', strtotime($event->event_date . ' + ' . $event->duration / 1000 . ' seconds') );
 								$new_event['EventEndMinute'] = date( 'i', strtotime($event->event_date . ' + ' . $event->duration / 1000 . ' seconds') );
 							} else {
-								// Add an abitrary 3 hours to the start time to get the end time.
-								$new_event['EventEndDate'] = date( 'Y-m-d', strtotime($event->event_date . ' + 3 hours') );
-								$new_event['EventEndHour'] = date( 'h', strtotime($event->event_date . ' + 3 hours') );
-								$new_event['EventEndMinute'] = date( 'i', strtotime($event->event_date . ' + 3 hours') );
+								// Add an abitrary 2 hours to the start time to get the end time.
+								$new_event['EventEndDate'] = date( 'Y-m-d', strtotime($event->event_date . ' + 2 hours') );
+								$new_event['EventEndHour'] = date( 'h', strtotime($event->event_date . ' + 2 hours') );
+								$new_event['EventEndMinute'] = date( 'i', strtotime($event->event_date . ' + 2 hours') );
 							}
 
 							$content .= '<br><font color="red">&nbsp;-- Creating new event.</font>';
