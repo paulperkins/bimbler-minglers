@@ -185,6 +185,8 @@ class Bimbler_Minglers {
 		$a = shortcode_atts (array (
                         'api_key' 	=> 7,
 						'group_id'	=> 0,
+						'create_if_not_found' => 'N',
+						'update_meta_if_found' => 'N',
                         'test' 		=> 'Y',
 		), $atts);
 		
@@ -204,9 +206,23 @@ class Bimbler_Minglers {
 		$content .= '<h5>Input Parameters</h5>';
 		$content .= 'Group ID: ' .  $a['group_id'] . '<br>';
 		$content .= 'API Key: ' .  $a['api_key'] . '<br>';
-		$content .= 'Test mode: ' . $a['test'] . '<br><br>';
+		$content .= 'Test mode: ' . $a['test'] . '<br>';
+		$content .= 'Create new: ' . $a['create_if_not_found'] . '<br>';
+		$content .= 'Update meta: ' . $a['update_meta_if_found'] . '<br><br>';
 
 		$output = '';
+
+		// What does this app do today?
+		$create_if_not_found = false;
+		$update_meta_if_found = false;
+
+		if ('Y' == $a['create_if_not_found']) {
+			$create_if_not_found = true;
+		}
+
+		if ('Y' == $a['update_meta_if_found']) {
+			$update_meta_if_found = true;
+		}
 		
 		$test_mode = false;
 		
@@ -263,10 +279,6 @@ class Bimbler_Minglers {
 					$content .= '&nbsp;--'; 
 					
 					//error_log (json_encode ($get_posts));
-
-					// What does this app do today?
-					$create_if_not_found = true;
-					$update_meta_if_found = false;
 					
 					// Got the same event (or at least, *a* Mingle starting at the same time).
 					if (!empty ($get_posts)) {
@@ -375,7 +387,7 @@ class Bimbler_Minglers {
 							
 						} else { // End create_if_not_found.
 							
-							$content .= '<font color="green"><br>&nbsp;-- Not found. No action taken.</font>';
+							$content .= '<font color="green"><br>&nbsp;-- Not running in "Create if not found" mode - no action taken.</font>';
 						} 
 					}
 					
