@@ -313,7 +313,17 @@ class Bimbler_Minglers {
 								
 							} else {
 								
-								$content .= '<font color="green">&nbsp;-- Existing event with Meetup ID set - no action to take.</font>';	
+								$content .= '<font color="green">&nbsp;-- Existing event with Meetup ID set - no action to take.</font>';
+								
+								// See if we need to update date / time.
+								// Can't do this, as the query loop is searching by date / time.	
+/*								$curr_start_date = tribe_get_start_date($event->ID, false, 'Y-m-d H:i:s');
+								$curr_end_date = tribe_get_end_date($event->ID, false, 'Y-m-d H:i:s');
+								
+								if ($curr_start_date != $event->event_date) {
+									$content .= ' Meetup start time not same as here (' . $curr_start_date . ' -> ' . $event->event_date);  
+								} */
+								
 							}
 						} else {
 							$content .= '<font color="green">&nbsp;-- Not running in "Update Meetup ID if found" mode - no action taken.</font>'; 
@@ -332,10 +342,17 @@ class Bimbler_Minglers {
 							$new_event['EventStartHour'] = date( 'h', strtotime ($event->event_date) );
 							$new_event['EventStartMinute'] = date( 'i', strtotime ($event->event_date) );
 
-							// Add an abitrary 3 hours to the start time to get the end time.
-							$new_event['EventEndDate'] = date( 'Y-m-d', strtotime($event->event_date . ' + 3 hours') );
-							$new_event['EventEndHour'] = date( 'h', strtotime($event->event_date . ' + 3 hours') );
-							$new_event['EventEndMinute'] = date( 'i', strtotime($event->event_date . ' + 3 hours') );
+							if (isset ($event->duration)) {
+								//$content .= ' Adding ' . $event->duration / 1000 . ' seconds '; 
+								$new_event['EventEndDate'] = date( 'Y-m-d', strtotime($event->event_date . ' + ' . $event->duration / 1000 . ' seconds') );
+								$new_event['EventEndHour'] = date( 'h', strtotime($event->event_date . ' + ' . $event->duration / 1000 . ' seconds') );
+								$new_event['EventEndMinute'] = date( 'i', strtotime($event->event_date . ' + ' . $event->duration / 1000 . ' seconds') );
+							} else {
+								// Add an abitrary 3 hours to the start time to get the end time.
+								$new_event['EventEndDate'] = date( 'Y-m-d', strtotime($event->event_date . ' + 3 hours') );
+								$new_event['EventEndHour'] = date( 'h', strtotime($event->event_date . ' + 3 hours') );
+								$new_event['EventEndMinute'] = date( 'i', strtotime($event->event_date . ' + 3 hours') );
+							}
 
 							$content .= '<br><font color="red">&nbsp;-- Creating new event.</font>';
 							
