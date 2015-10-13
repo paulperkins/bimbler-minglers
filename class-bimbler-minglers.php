@@ -364,7 +364,8 @@ class Bimbler_Minglers {
 							$new_event['post_content'] = $event->description; 
 
 							// XXXXX REMOVE SECOND TERM WHEN FINISHED TESTING XXXX
-							if (!$test_mode && ($created < 1)) {
+							//if (!$test_mode && ($created < 1)) {
+							if (!$test_mode) {
 							
 							    $new_event_id = TribeEventsAPI::createEvent ($new_event);
     
