@@ -196,6 +196,13 @@ class Bimbler_Minglers {
 			return $content;
 		}
 		
+		//error_log ('Post vars: ' . json_encode ($_POST));
+		
+		if (isset ($_POST['bimbler-run-job'])) {
+			error_log ('Run job clicked.');
+			$a['test'] = 'N';
+		}
+		
 		// Work around the UTC bug...
 		date_default_timezone_set('Australia/Brisbane');
 		
